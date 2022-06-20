@@ -301,7 +301,7 @@
     "home": "Home",
     "hourAbbrev": "h",
     "incentiveToken": "Incentive token",
-    "inclXInVeBal": "Incl. {0} in veBAL",
+    "inclXInVeBal": "{0} in veBAL",
     "initialBPT": "Initial BPT",
     "initialWeight": "Initial weight",
     "insufficientBalance": "Not enough funds",
