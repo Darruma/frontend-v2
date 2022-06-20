@@ -178,7 +178,14 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, reactive, toRefs, watch } from 'vue';
+import {
+  computed,
+  ComputedRef,
+  defineComponent,
+  reactive,
+  toRefs,
+  watch
+} from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 
@@ -200,6 +207,7 @@ import { EXTERNAL_LINKS } from '@/constants/links';
 import { POOLS } from '@/constants/pools';
 import { getAddressFromPoolId, includesAddress } from '@/lib/utils';
 import StakingProvider from '@/providers/local/staking/staking.provider';
+import { Pool } from '@/services/pool/types';
 import useWeb3 from '@/services/web3/useWeb3';
 
 interface PoolPageData {
@@ -226,7 +234,7 @@ export default defineComponent({
     const { fNum2 } = useNumbers();
     const { explorerLinks, isWalletReady } = useWeb3();
     const { prices } = useTokens();
-    const { blockNumber, isKovan, isMainnet, isPolygon } = useWeb3();
+    const { blockNumber } = useWeb3();
     const { addAlert, removeAlert } = useAlerts();
     const { balancerTokenListTokens } = useTokens();
     const { isAffected, warnings } = usePoolWarning(route.params.id as string);
@@ -234,8 +242,7 @@ export default defineComponent({
     /**
      * QUERIES
      */
-    const poolQuery = usePoolQuery(route.params.id as string);
-    const poolSnapshotsQuery = usePoolSnapshotsQuery(route.params.id as string);
+    const poolQuery = Object.freeze(usePoolQuery(route.params.id as string));
 
     /**
      * STATE
@@ -248,6 +255,13 @@ export default defineComponent({
      * COMPUTED
      */
     const pool = computed(() => poolQuery.data.value);
+    const poolSnapshotsQuery = Object.freeze(
+      usePoolSnapshotsQuery(
+        route.params.id as string,
+        pool as ComputedRef<Pool>
+      )
+    );
+
     const {
       isStableLikePool,
       isLiquidityBootstrappingPool,
@@ -351,34 +365,6 @@ export default defineComponent({
       return false;
     });
 
-    const isCopperNetworkSupported = computed(
-      () => isMainnet.value || isPolygon.value || isKovan.value
-    );
-
-    // Temporary solution to hide Copper card on Fei pool page.
-    // Longer terms solution is needed distinguish LBP platforms
-    // and display custom widgets linking to their pages.
-    const isCopperPool = computed((): boolean => {
-      const feiPoolId =
-        '0xede4efcc5492cf41ed3f0109d60bc0543cfad23a0002000000000000000000bb';
-      return (
-        !!pool.value &&
-        isLiquidityBootstrappingPool.value &&
-        pool.value.id !== feiPoolId &&
-        isCopperNetworkSupported.value
-      );
-    });
-
-    const copperNetworkPrefix = computed(() => {
-      if (isPolygon.value) {
-        return 'polygon.';
-      }
-      if (isKovan.value) {
-        return 'kovan.';
-      }
-      return '';
-    });
-
     const hasCustomToken = computed(() => {
       const knownTokens = Object.keys(balancerTokenListTokens.value);
       return (
@@ -447,9 +433,7 @@ export default defineComponent({
       swapFeeToolTip,
       isStableLikePool,
       isLiquidityBootstrappingPool,
-      isCopperPool,
       isStablePhantomPool,
-      copperNetworkPrefix,
       hasCustomToken,
       isAffected,
       warnings,

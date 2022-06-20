@@ -36,7 +36,7 @@ export default function usePoolQuery(
   const { appLoading } = useApp();
   const { account } = useWeb3();
   const { currency } = useUserSettings();
-  const { data: subgraphGauges } = useGaugesQuery();
+  const { data: subgraphGauges } = Object.freeze(useGaugesQuery());
   const { tokens } = useTokens();
 
   const gaugeAddresses = computed(() =>
@@ -92,12 +92,14 @@ export default function usePoolQuery(
     }
 
     // Inject relevant pool tokens to fetch metadata
-    await injectTokens([
-      ...pool.tokensList,
-      ...lpTokensFor(pool),
-      balancerSubgraphService.pools.addressFor(pool.id)
+    await Promise.all([
+      injectTokens([
+        ...pool.tokensList,
+        ...lpTokensFor(pool),
+        balancerSubgraphService.pools.addressFor(pool.id)
+      ]),
+      forChange(dynamicDataLoading, false)
     ]);
-    await forChange(dynamicDataLoading, false);
 
     // Need to fetch onchain pool data first so that calculations can be
     // performed in the decoration step.
